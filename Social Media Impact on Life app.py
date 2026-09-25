@@ -1,10 +1,10 @@
-
 import joblib
 import pandas as pd
 import streamlit as st
 
+
 # --------------------------------------------------
-# PAGE CONFIGURATION
+# PAGE SETTINGS
 # --------------------------------------------------
 
 st.set_page_config(
@@ -13,8 +13,9 @@ st.set_page_config(
     layout="centered"
 )
 
+
 # --------------------------------------------------
-# CUSTOM CSS
+# CUSTOM STYLE
 # --------------------------------------------------
 
 st.markdown("""
@@ -37,40 +38,6 @@ st.markdown("""
     margin-bottom: 25px;
 }
 
-.result-box {
-    background-color: #123d29;
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 15px;
-    margin-bottom: 15px;
-}
-
-.result-text {
-    color: #39ff88;
-    font-size: 18px;
-    font-weight: 500;
-}
-
-.interpretation-box {
-    background-color: #19324a;
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 10px;
-}
-
-.interpretation-title {
-    color: white;
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.interpretation-text {
-    color: #e5e7eb;
-    font-size: 16px;
-    line-height: 1.5;
-}
-
 .footer {
     text-align: center;
     color: #777;
@@ -82,37 +49,51 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
 # --------------------------------------------------
 # LOAD MODEL
 # --------------------------------------------------
 
 try:
+
     model = joblib.load("social_media_model.pkl")
 
 except FileNotFoundError:
+
     st.error("❌ Model file 'social_media_model.pkl' not found.")
     st.stop()
 
 except Exception as e:
+
     st.error(f"❌ Error loading model: {e}")
     st.stop()
+
 
 # --------------------------------------------------
 # LOAD DATASET
 # --------------------------------------------------
 
 try:
+
     df = pd.read_csv("Social Media Impact on Life.csv")
 
 except FileNotFoundError:
+
     st.error(
         "❌ Dataset file 'Social Media Impact on Life.csv' not found."
     )
+
+    st.info(
+        "Make sure the CSV file is in the same folder as this Streamlit app."
+    )
+
     st.stop()
 
 except Exception as e:
+
     st.error(f"❌ Error loading dataset: {e}")
     st.stop()
+
 
 # --------------------------------------------------
 # CHECK REQUIRED COLUMNS
@@ -126,14 +107,21 @@ required_columns = [
 ]
 
 missing_columns = [
-    column for column in required_columns
+    column
+    for column in required_columns
     if column not in df.columns
 ]
 
 if missing_columns:
+
     st.error("❌ Required columns are missing from the dataset.")
+
+    st.write("Missing columns:")
+
     st.write(missing_columns)
+
     st.stop()
+
 
 # --------------------------------------------------
 # TITLE
@@ -145,12 +133,15 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="sub-title">Enter your details to predict your mental health score.</div>',
+    '<div class="sub-title">'
+    'Enter your details to predict your mental health score.'
+    '</div>',
     unsafe_allow_html=True
 )
 
+
 # --------------------------------------------------
-# INPUTS
+# USER INPUTS
 # --------------------------------------------------
 
 age = st.number_input(
@@ -177,25 +168,40 @@ sleep = st.number_input(
     step=0.1
 )
 
+
 # --------------------------------------------------
-# PREDICT BUTTON
+# PREDICTION
 # --------------------------------------------------
 
 if st.button("🔮 Predict"):
 
     try:
 
-        # Create input for model
+        # Create input using the EXACT feature names
+        # used when training the model.
+
         input_data = pd.DataFrame({
+
             "Avg_Daily_Usage_Hours": [usage],
+
             "Sleep_Hours_Per_Night": [sleep],
+
             "Age": [age]
+
         })
 
-        # Prediction
-        prediction = float(model.predict(input_data)[0])
 
-        # Dataset statistics
+        # Make prediction
+
+        prediction = float(
+            model.predict(input_data)[0]
+        )
+
+
+        # --------------------------------------------------
+        # DATASET STATISTICS
+        # --------------------------------------------------
+
         average_score = float(
             df["Mental_Health_Score"].mean()
         )
@@ -204,6 +210,7 @@ if st.button("🔮 Predict"):
             df["Mental_Health_Score"].std()
         )
 
+
         # --------------------------------------------------
         # CLASSIFICATION
         # --------------------------------------------------
@@ -211,71 +218,133 @@ if st.button("🔮 Predict"):
         if prediction < average_score - standard_deviation:
 
             classification = "Lower Mental Health Score Range"
-            icon = "🔵"
 
             explanation = (
-                "The predicted score is lower than the typical "
+                "The predicted score is below the typical "
                 "range observed in the project dataset."
             )
+
+            result_color = "#3b82f6"
+            result_background = "#172554"
+            icon = "🔵"
+
 
         elif prediction > average_score + standard_deviation:
 
             classification = "Higher Mental Health Score Range"
-            icon = "🔴"
 
             explanation = (
-                "The predicted score is higher than the typical "
+                "The predicted score is above the typical "
                 "range observed in the project dataset."
             )
+
+            result_color = "#ef4444"
+            result_background = "#450a0a"
+            icon = "🔴"
+
 
         else:
 
             classification = "Moderate Mental Health Score Range"
-            icon = "🟡"
 
             explanation = (
-                "The predicted score falls within the average "
+                "The predicted score falls within the typical "
                 "range observed in the project dataset."
             )
 
+            result_color = "#f59e0b"
+            result_background = "#451a03"
+            icon = "🟡"
+
+
         # --------------------------------------------------
-        # PREDICTION RESULT
+        # RESULT
         # --------------------------------------------------
 
         st.markdown(
-            f'<div class="result-box">'
-            f'<div class="result-text">'
-            f'Predicted Mental Health Score: {prediction:.2f}'
-            f'</div>'
-            f'</div>',
+            f"""
+            <div style="
+                background-color: {result_background};
+                border-left: 5px solid {result_color};
+                padding: 18px 20px;
+                border-radius: 8px;
+                margin-top: 15px;
+                margin-bottom: 15px;
+            ">
+
+                <div style="
+                    color: {result_color};
+                    font-size: 18px;
+                    font-weight: 600;
+                ">
+
+                    Predicted Mental Health Score:
+                    {prediction:.2f}
+
+                </div>
+
+            </div>
+            """,
             unsafe_allow_html=True
         )
+
 
         # --------------------------------------------------
         # INTERPRETATION
         # --------------------------------------------------
 
-        interpretation_html = (
-            '<div class="interpretation-box">'
-            f'<div class="interpretation-title">'
-            f'{icon} {classification}'
-            f'</div>'
-            f'<div class="interpretation-text">'
-            f'{explanation}'
-            f'</div>'
-            '</div>'
-        )
-
         st.markdown(
-            interpretation_html,
+            f"""
+            <div style="
+                background-color: #19324a;
+                padding: 20px;
+                border-radius: 8px;
+                margin-top: 10px;
+            ">
+
+                <div style="
+                    color: {result_color};
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin-bottom: 8px;
+                ">
+
+                    {icon} {classification}
+
+                </div>
+
+                <div style="
+                    color: #e5e7eb;
+                    font-size: 16px;
+                    line-height: 1.5;
+                ">
+
+                    {explanation}
+
+                </div>
+
+            </div>
+            """,
             unsafe_allow_html=True
         )
+
+
+        # --------------------------------------------------
+        # NOTE
+        # --------------------------------------------------
+
+        st.caption(
+            "These categories are based on the project dataset "
+            "and are not clinical diagnostic categories."
+        )
+
 
     except Exception as e:
 
         st.error(
             f"❌ Prediction error: {e}"
         )
+
 
 # --------------------------------------------------
 # FOOTER
