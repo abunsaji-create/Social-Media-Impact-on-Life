@@ -1,14 +1,11 @@
-%%writefile "Social Media Impact on Life app.py"
-
 import joblib
 import pandas as pd
 import streamlit as st
-from pathlib import Path
 
 
-# ==================================================
-# PAGE CONFIGURATION
-# ==================================================
+# --------------------------------------------------
+# PAGE SETTINGS
+# --------------------------------------------------
 
 st.set_page_config(
     page_title="Social Media Impact Analyzer",
@@ -17,16 +14,9 @@ st.set_page_config(
 )
 
 
-# ==================================================
-# FILE LOCATION
-# ==================================================
-
-BASE_DIR = Path(__file__).resolve().parent
-
-
-# ==================================================
-# CUSTOM CSS
-# ==================================================
+# --------------------------------------------------
+# CUSTOM STYLE
+# --------------------------------------------------
 
 st.markdown("""
 <style>
@@ -60,108 +50,85 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ==================================================
+# --------------------------------------------------
 # LOAD MODEL
-# ==================================================
-
-model_path = BASE_DIR / "social_media_model.pkl"
+# --------------------------------------------------
 
 try:
-    model = joblib.load(model_path)
+
+    model = joblib.load("social_media_model.pkl")
 
 except FileNotFoundError:
-    st.error("❌ social_media_model.pkl was not found.")
-    st.info(f"Expected location: {model_path}")
+
+    st.error("❌ Model file 'social_media_model.pkl' not found.")
     st.stop()
 
 except Exception as e:
+
     st.error(f"❌ Error loading model: {e}")
     st.stop()
 
 
-# ==================================================
-# FIND DATASET
-# ==================================================
+# --------------------------------------------------
+# LOAD DATASET
+# --------------------------------------------------
 
-# Look for every CSV in the same folder as the app
-csv_files = list(BASE_DIR.glob("*.csv"))
+try:
 
+    df = pd.read_csv("Social Media Impact on Life.csv")
 
-if not csv_files:
+except FileNotFoundError:
 
-    st.error("❌ No CSV dataset was found.")
-
-    st.info(
-        "Put your Social Media Impact CSV file in the same "
-        "folder as 'Social Media Impact on Life app.py'."
+    st.error(
+        "❌ Dataset file 'Social Media Impact on Life.csv' not found."
     )
 
-    st.info(f"App folder: {BASE_DIR}")
+    st.info(
+        "Make sure the CSV file is in the same folder as this Streamlit app."
+    )
 
     st.stop()
 
+except Exception as e:
 
-# ==================================================
-# FIND THE CORRECT CSV
-# ==================================================
+    st.error(f"❌ Error loading dataset: {e}")
+    st.stop()
 
-required_columns = {
+
+# --------------------------------------------------
+# CHECK REQUIRED COLUMNS
+# --------------------------------------------------
+
+required_columns = [
     "Avg_Daily_Usage_Hours",
     "Sleep_Hours_Per_Night",
     "Age",
     "Mental_Health_Score"
-}
+]
 
-df = None
-dataset_path = None
+missing_columns = [
+    column
+    for column in required_columns
+    if column not in df.columns
+]
 
-for csv_file in csv_files:
+if missing_columns:
 
-    try:
+    st.error("❌ Required columns are missing from the dataset.")
 
-        temp_df = pd.read_csv(csv_file)
+    st.write("Missing columns:")
 
-        if required_columns.issubset(temp_df.columns):
-
-            df = temp_df
-            dataset_path = csv_file
-            break
-
-    except Exception:
-        continue
-
-
-# ==================================================
-# DATASET NOT FOUND
-# ==================================================
-
-if df is None:
-
-    st.error(
-        "❌ The CSV file was found, but it does not contain "
-        "the required columns."
-    )
-
-    st.write("Required columns:")
-
-    st.write(list(required_columns))
-
-    st.write("CSV files found:")
-
-    for file in csv_files:
-        st.write(file.name)
+    st.write(missing_columns)
 
     st.stop()
 
 
-# ==================================================
+# --------------------------------------------------
 # TITLE
-# ==================================================
+# --------------------------------------------------
 
 st.markdown(
-    '<div class="main-title">'
-    '📱 Social Media Impact Analyzer'
-    '</div>',
+    '<div class="main-title">📱 Social Media Impact Analyzer</div>',
     unsafe_allow_html=True
 )
 
@@ -173,9 +140,9 @@ st.markdown(
 )
 
 
-# ==================================================
-# INPUTS
-# ==================================================
+# --------------------------------------------------
+# USER INPUTS
+# --------------------------------------------------
 
 age = st.number_input(
     "Age",
@@ -202,28 +169,38 @@ sleep = st.number_input(
 )
 
 
-# ==================================================
+# --------------------------------------------------
 # PREDICTION
-# ==================================================
+# --------------------------------------------------
 
 if st.button("🔮 Predict"):
 
     try:
 
+        # Create input using the EXACT feature names
+        # used when training the model.
+
         input_data = pd.DataFrame({
+
             "Avg_Daily_Usage_Hours": [usage],
+
             "Sleep_Hours_Per_Night": [sleep],
+
             "Age": [age]
+
         })
+
+
+        # Make prediction
 
         prediction = float(
             model.predict(input_data)[0]
         )
 
 
-        # ----------------------------------------------
+        # --------------------------------------------------
         # DATASET STATISTICS
-        # ----------------------------------------------
+        # --------------------------------------------------
 
         average_score = float(
             df["Mental_Health_Score"].mean()
@@ -234,9 +211,9 @@ if st.button("🔮 Predict"):
         )
 
 
-        # ----------------------------------------------
+        # --------------------------------------------------
         # CLASSIFICATION
-        # ----------------------------------------------
+        # --------------------------------------------------
 
         if prediction < average_score - standard_deviation:
 
@@ -280,9 +257,9 @@ if st.button("🔮 Predict"):
             icon = "🟡"
 
 
-        # ----------------------------------------------
+        # --------------------------------------------------
         # RESULT
-        # ----------------------------------------------
+        # --------------------------------------------------
 
         st.markdown(
             f"""
@@ -300,8 +277,10 @@ if st.button("🔮 Predict"):
                     font-size: 18px;
                     font-weight: 600;
                 ">
+
                     Predicted Mental Health Score:
                     {prediction:.2f}
+
                 </div>
 
             </div>
@@ -310,9 +289,9 @@ if st.button("🔮 Predict"):
         )
 
 
-        # ----------------------------------------------
+        # --------------------------------------------------
         # INTERPRETATION
-        # ----------------------------------------------
+        # --------------------------------------------------
 
         st.markdown(
             f"""
@@ -329,7 +308,9 @@ if st.button("🔮 Predict"):
                     font-weight: 700;
                     margin-bottom: 8px;
                 ">
+
                     {icon} {classification}
+
                 </div>
 
                 <div style="
@@ -337,7 +318,9 @@ if st.button("🔮 Predict"):
                     font-size: 16px;
                     line-height: 1.5;
                 ">
+
                     {explanation}
+
                 </div>
 
             </div>
@@ -345,6 +328,10 @@ if st.button("🔮 Predict"):
             unsafe_allow_html=True
         )
 
+
+        # --------------------------------------------------
+        # NOTE
+        # --------------------------------------------------
 
         st.caption(
             "These categories are based on the project dataset "
@@ -359,9 +346,9 @@ if st.button("🔮 Predict"):
         )
 
 
-# ==================================================
+# --------------------------------------------------
 # FOOTER
-# ==================================================
+# --------------------------------------------------
 
 st.markdown(
     '<div class="footer">'
