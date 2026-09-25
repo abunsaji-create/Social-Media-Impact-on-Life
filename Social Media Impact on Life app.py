@@ -5,24 +5,19 @@ from pathlib import Path
 
 st.set_page_config(page_title="Social Media Impact Analyzer", page_icon="📱")
 
-# Files
 folder = Path(__file__).parent
 model = joblib.load(folder / "social_media_model.pkl")
 
-# Dataset
 csv = next(folder.glob("*.csv"))
 df = pd.read_csv(csv)
 
-# Title
 st.title("📱 Social Media Impact Analyzer")
 st.write("Enter your details to predict your mental health score.")
 
-# Inputs
 age = st.number_input("Age", 10, 100, 20)
 usage = st.number_input("Average Daily Social Media Usage (Hours)", 0.0, 24.0, 4.0)
 sleep = st.number_input("Sleep Hours Per Night", 0.0, 24.0, 7.0)
 
-# Prediction
 if st.button("🔮 Predict"):
 
     data = pd.DataFrame({
